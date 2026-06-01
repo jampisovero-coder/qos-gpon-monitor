@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QoS-GPON Monitor — Sistema de Monitoreo de Calidad de Servicio FTTH</title>
+  <meta name="description" content="Sistema de monitoreo técnico de QoS para redes FTTH-GPON. Mide Delay, Jitter, Throughput y Packet Loss con diseño pretest-postest para investigación universitaria.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h1>QoS-GPON Monitor</h1>
+      <p>v2.0 · FTTH Research Tool</p>
+    </div>
+
+    <div class="phase-badge pretest" id="phaseBadge" title="Haz clic para cambiar la fase activa">
+      FASE: DIAGNÓSTICO
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard" id="nav-dashboard">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard QoS
+      </div>
+      <div class="nav-item" data-page="nodes" id="nav-nodes">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        Nodos de Prueba
+      </div>
+      <div class="nav-item" data-page="measure" id="nav-measure">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Ejecutar Medición
+      </div>
+      <div class="nav-item" data-page="history" id="nav-history">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+        Historial
+      </div>
+      <div class="nav-item" data-page="comparison" id="nav-comparison">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Comparativa
+      </div>
+      <div class="nav-item" data-page="reliability" id="nav-reliability">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Confiabilidad
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      Tesis FTTH-GPON · QoS Research<br>
+      Ingeniería de Sistemas
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard QoS</span>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" id="btnSeedData" style="color:#10b981;border-color:#10b98133">📊 Cargar Datos Demo</button>
+        <button class="btn btn-secondary btn-sm" id="btnExportJSON">📦 Backup JSON</button>
+        <button class="btn btn-secondary btn-sm" id="btnClearData" style="color:#ef4444;border-color:#ef444433">🗑 Limpiar</button>
+      </div>
+    </header>
+
+    <!-- ==========================================
+         PÁGINA: DASHBOARD
+         ========================================== -->
+    <section class="page-content fade-in" id="page-dashboard">
+
+      <div class="section-header">
+        <div>
+          <h2>Dashboard QoS</h2>
+          <p class="section-subtitle">Últimas métricas técnicas registradas · Redes FTTH-GPON</p>
+        </div>
+        <button class="btn btn-primary" id="btnQuickMeasure">⚡ Medición Rápida</button>
+      </div>
+
+      <!-- MÉTRICAS PRINCIPALES -->
+      <div class="metrics-grid">
+        <div class="metric-card delay">
+          <div class="metric-label">Delay (Latencia)</div>
+          <div><span class="metric-value delay-color" id="dash-delay">—</span><span class="metric-unit">ms</span></div>
+          <div class="metric-status">
+            <span class="status-dot idle" id="dot-delay"></span>
+            <span id="lbl-delay" style="color:var(--text-muted)">Sin datos</span>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Umbral ITU-T: &lt; 150 ms</div>
+        </div>
+        <div class="metric-card jitter">
+          <div class="metric-label">Jitter (Variación)</div>
+          <div><span class="metric-value jitter-color" id="dash-jitter">—</span><span class="metric-unit">ms</span></div>
+          <div class="metric-status">
+            <span class="status-dot idle" id="dot-jitter"></span>
+            <span id="lbl-jitter" style="color:var(--text-muted)">Sin datos</span>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Umbral ITU-T: &lt; 30 ms</div>
+        </div>
+        <div class="metric-card throughput">
+          <div class="metric-label">Throughput (Descarga)</div>
+          <div><span class="metric-value throughput-color" id="dash-throughput">—</span><span class="metric-unit">Mbps</span></div>
+          <div class="metric-status">
+            <span class="status-dot idle" id="dot-throughput"></span>
+            <span id="lbl-throughput" style="color:var(--text-muted)">Sin datos</span>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Objetivo: &gt; 80% del plan</div>
+        </div>
+        <div class="metric-card loss">
+          <div class="metric-label">Packet Loss</div>
+          <div><span class="metric-value loss-color" id="dash-loss">—</span><span class="metric-unit">%</span></div>
+          <div class="metric-status">
+            <span class="status-dot idle" id="dot-loss"></span>
+            <span id="lbl-loss" style="color:var(--text-muted)">Sin datos</span>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Umbral ITU-T: &lt; 1%</div>
+        </div>
+      </div>
+
+      <!-- GRÁFICOS -->
+      <div class="dashboard-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Evolución de Latencia (ms)</span>
+            <select id="dashMetricSelect" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:4px 10px;border-radius:6px;font-size:0.8rem">
+              <option value="delay">Delay (ms)</option>
+              <option value="jitter">Jitter (ms)</option>
+              <option value="packetLoss">Packet Loss (%)</option>
+              <option value="throughput">Throughput (Mbps)</option>
+            </select>
+          </div>
+          <div class="chart-container"><canvas id="dashTimelineChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Perfil QoS</span></div>
+          <div class="chart-container"><canvas id="dashRadarChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ÚLTIMAS MEDICIONES -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-title">Últimas Mediciones</div>
+        <div class="table-wrapper" id="dashRecentTable">
+          <div class="empty-state"><div class="icon">📊</div><p>Ejecuta una medición para ver resultados aquí.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA: NODOS
+         ========================================== -->
+    <section class="page-content hidden" id="page-nodes">
+      <div class="section-header">
+        <div>
+          <h2>Nodos de Prueba</h2>
+          <p class="section-subtitle">Puntos de monitoreo de la red FTTH-GPON</p>
+        </div>
+        <button class="btn btn-primary" id="btnAddNode">+ Agregar Nodo</button>
+      </div>
+      <div class="card" id="nodeFormContainer" style="display:none;margin-bottom:20px">
+        <div class="card-title" id="nodeFormTitle">Nuevo Nodo</div>
+        <div id="nodeFormInner"></div>
+      </div>
+      <div id="nodeListContainer"></div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA: MEDICIÓN
+         ========================================== -->
+    <section class="page-content hidden" id="page-measure">
+      <div class="section-header">
+        <div>
+          <h2>Ejecutar Medición QoS</h2>
+          <p class="section-subtitle">Ficha Técnica Automatizada · Instrumento de observación técnica</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- CONFIG -->
+        <div class="card">
+          <div class="card-title">Configuración de Sesión</div>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="form-group">
+              <label>Fase de Medición</label>
+              <select id="measFase">
+                <option value="PRETEST">DIAGNÓSTICO (Red Actual)</option>
+                <option value="POSTEST">PROYECCIÓN (Estándar GPON)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nodo a Medir</label>
+              <select id="measNodeSelect"><option value="">-- Selecciona nodo --</option></select>
+            </div>
+            <div class="form-group form-full">
+              <label>Descripción / Observaciones</label>
+              <input type="text" id="measDesc" placeholder="Ej. Medición inicial zona A antes de FTTH">
+            </div>
+            <div class="form-group">
+              <label>Operador / Investigador</label>
+              <input type="text" id="measOperador" placeholder="Nombre del investigador">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" style="margin-top:16px" id="btnStartMeasure">
+            ▶ Iniciar Medición Automática
+          </button>
+        </div>
+
+        <!-- ESTADO EN TIEMPO REAL -->
+        <div class="card">
+          <div class="card-title">Estado de Medición</div>
+          <div style="margin-top:16px">
+            <div id="measProgressLabel" style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:10px">Listo para iniciar...</div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="measProgressBar" style="width:0%"></div></div>
+          </div>
+          <!-- Métricas en tiempo real -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px">
+            <div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Delay</div>
+              <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--accent-cyan)" id="live-delay">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Jitter</div>
+              <div style="font-family:var(--font-mono);font-size:1.5rem;color:#a855f7" id="live-jitter">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Throughput DL</div>
+              <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--accent-green)" id="live-throughput">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Packet Loss</div>
+              <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--accent-yellow)" id="live-loss">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTADO -->
+      <div class="card hidden" id="measResultCard" style="margin-top:20px">
+        <div class="card-title">Resultado de la Medición</div>
+        <div id="measResultContent"></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA: HISTORIAL
+         ========================================== -->
+    <section class="page-content hidden" id="page-history">
+      <div class="section-header">
+        <div>
+          <h2>Historial de Mediciones</h2>
+          <p class="section-subtitle">Registro técnico acumulado de sesiones</p>
+        </div>
+        <button class="btn btn-secondary" id="btnExportHistorial">📥 Exportar CSV</button>
+      </div>
+
+      <div class="stats-row" id="histStats"></div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <select id="histFaseFilter" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:8px 12px;border-radius:8px;font-size:0.875rem">
+          <option value="">Todas las fases</option>
+           <option value="PRETEST">DIAGNÓSTICO</option>
+           <option value="POSTEST">PROYECCIÓN GPON</option>
+        </select>
+        <select id="histNodeFilter" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:8px 12px;border-radius:8px;font-size:0.875rem">
+          <option value="">Todos los nodos</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper" id="histTable">
+          <div class="empty-state"><div class="icon">📋</div><p>No hay mediciones registradas aún.</p></div>
+        </div>
+      </div>
+
+      <!-- Gráfico historial -->
+      <div class="chart-card" style="margin-top:20px">
+        <div class="chart-title">Evolución Temporal de Métricas</div>
+        <div class="chart-container" style="height:260px"><canvas id="histTimelineChart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA: COMPARATIVA
+         ========================================== -->
+    <section class="page-content hidden" id="page-comparison">
+      <div class="section-header">
+        <div>
+          <h2>Análisis Comparativo</h2>
+          <p class="section-subtitle">Pretest vs Postest · Diseño experimental cuantitativo</p>
+        </div>
+      </div>
+
+      <div class="session-selector card" style="margin-bottom:20px">
+        <div class="card-title" style="margin-bottom:12px">Seleccionar Sesiones para Comparar</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:200px">
+            <label>Sesión DIAGNÓSTICO</label>
+            <select id="compPreSelect" class="select-input"></select>
+          </div>
+          <div class="comparison-column">
+            <label>Sesión PROYECCIÓN GPON</label>
+            <select id="compPostSelect"></select>
+          </div>
+          <button class="btn btn-primary" id="btnRunComparison">Analizar</button>
+        </div>
+      </div>
+
+      <div id="comparisonPanel">
+        <div class="empty-state"><div class="icon">⚖️</div><p>Selecciona sesiones y haz clic en "Analizar".</p></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA: CONFIABILIDAD
+         ========================================== -->
+    <section class="page-content hidden" id="page-reliability">
+      <div id="reliabilityPanel"></div>
+    </section>
+
+  </div><!-- /main-content -->
+</div><!-- /app-wrapper -->
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- MODAL CAMBIO DE FASE -->
+<div id="phaseModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+  <div class="card" style="max-width:380px;width:90%;padding:32px">
+    <h3 style="margin-bottom:16px">Cambiar Fase Activa</h3>
+    <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px">Selecciona el modo de medición.</p>
+
+      <button class="btn btn-primary btn-block" id="setPhasePretest">📋 DIAGNÓSTICO (Red Actual)</button>
+      <button class="btn btn-success btn-block" id="setPhasePostest">✅ PROYECCIÓN (Estándar GPON)</button>
+      <button class="btn btn-secondary btn-block" id="closePhaseModal">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{
+  "sistema": "Sistema de Monitoreo QoS para Redes FTTH-GPON",
+  "version": "2.0",
+  "descripcion": "Esquema de base de datos relacional para almacenamiento de mediciones técnicas QoS. Diseño cuantitativo pretest-postest.",
+  "tablas": {
+    "nodos_prueba": {
+      "descripcion": "Puntos de monitoreo de la red FTTH-GPON",
+      "columnas": {
+        "id": "SERIAL PRIMARY KEY",
+        "nombre": "VARCHAR(100) NOT NULL",
+        "ubicacion": "VARCHAR(200)",
+        "ip_objetivo": "VARCHAR(45)",
+        "tipo_nodo": "VARCHAR(50) -- ONU, OLT, Gateway, Host",
+        "olt_asociada": "VARCHAR(100)",
+        "puerto_gpon": "VARCHAR(20)",
+        "ont_id": "VARCHAR(20)",
+        "plan_mbps": "INTEGER DEFAULT 100",
+        "creado_en": "TIMESTAMP DEFAULT NOW()"
+      }
+    },
+    "sesiones_medicion": {
+      "descripcion": "Agrupador de mediciones por fase experimental",
+      "columnas": {
+        "id": "SERIAL PRIMARY KEY",
+        "fase": "VARCHAR(10) NOT NULL CHECK (fase IN ('PRETEST', 'POSTEST'))",
+        "descripcion": "TEXT",
+        "operador": "VARCHAR(100)",
+        "fecha_inicio": "TIMESTAMP DEFAULT NOW()",
+        "fecha_fin": "TIMESTAMP",
+        "estado": "VARCHAR(20) DEFAULT 'activa'",
+        "observaciones": "TEXT"
+      }
+    },
+    "mediciones_qos": {
+      "descripcion": "Registro técnico de métricas QoS por sesión y nodo",
+      "columnas": {
+        "id": "UUID PRIMARY KEY DEFAULT gen_random_uuid()",
+        "sesion_id": "UUID REFERENCES sesiones_medicion(id) ON DELETE CASCADE",
+        "nodo_id": "UUID REFERENCES nodos_prueba(id)",
+        "timestamp": "TIMESTAMP DEFAULT NOW()",
+        "delay_ms": "DECIMAL(10,3) -- Latencia promedio ITU-T G.114",
+        "delay_min_ms": "DECIMAL(10,3)",
+        "delay_max_ms": "DECIMAL(10,3)",
+        "jitter_ms": "DECIMAL(10,3) -- Variación RFC 3550",
+        "throughput_dl_mbps": "DECIMAL(10,2) -- Descarga real",
+        "throughput_ul_mbps": "DECIMAL(10,2) -- Subida real",
+        "throughput_pct": "DECIMAL(5,1) -- Porcentaje del plan contratado",
+        "packet_loss_pct": "DECIMAL(5,2) -- Pérdida de paquetes %",
+        "qos_delay": "VARCHAR(20) CHECK (qos_delay IN ('excellent','acceptable','degraded','critical'))",
+        "qos_jitter": "VARCHAR(20) CHECK (qos_jitter IN ('excellent','acceptable','degraded','critical'))",
+        "qos_throughput": "VARCHAR(20) CHECK (qos_throughput IN ('excellent','acceptable','degraded','critical'))",
+        "qos_packet_loss": "VARCHAR(20) CHECK (qos_packet_loss IN ('excellent','acceptable','degraded','critical'))",
+        "global_score": "DECIMAL(3,2) -- 1.00 a 4.00",
+        "global_quality": "VARCHAR(20)",
+        "herramienta": "VARCHAR(100) DEFAULT 'HTTP/Fetch'",
+        "protocolo": "VARCHAR(20) DEFAULT 'HTTP/HTTPS'",
+        "delay_samples": "JSONB -- Array de muestras individuales"
+      },
+      "indices": [
+        "CREATE INDEX idx_med_sesion ON mediciones_qos(sesion_id)",
+        "CREATE INDEX idx_med_nodo ON mediciones_qos(nodo_id)",
+        "CREATE INDEX idx_med_fase_ts ON mediciones_qos(timestamp)"
+      ]
+    }
+  },
+  "umbrales_itu_t": {
+    "referencia": "ITU-T G.114, Y.1541, RFC 4594",
+    "delay": {
+      "excellent_ms": 10,
+      "acceptable_ms": 150,
+      "degraded_ms": 400
+    },
+    "jitter": {
+      "excellent_ms": 1,
+      "acceptable_ms": 30,
+      "degraded_ms": 50
+    },
+    "packet_loss": {
+      "excellent_pct": 0.1,
+      "acceptable_pct": 1.0,
+      "degraded_pct": 5.0
+    },
+    "throughput": {
+      "excellent_pct_plan": 80,
+      "acceptable_pct_plan": 60,
+      "degraded_pct_plan": 40
+    }
+  }
+}
