@@ -20,6 +20,7 @@ import { renderNodeList, renderNodeForm, populateNodeSelect } from './modules/no
 import { renderSessionSelectors, renderComparisonPanel } from './modules/comparison.js';
 import { seedDemoData } from './modules/seeder.js';
 import { renderReliabilityPanel } from './modules/reliability.js';
+import { abrirFichaTecnica } from './modules/fichaTecnica.js';
 
 // ============================================================
 // ESTADO GLOBAL
@@ -131,6 +132,10 @@ function initTopbarActions() {
   document.getElementById('btnExportJSON').addEventListener('click', () => {
     exportAllJSON(`qos_backup_${Date.now()}.json`);
     showToast('Backup JSON exportado.');
+  });
+
+  document.getElementById('btnFichaTecnica').addEventListener('click', () => {
+    window.abrirFichaTecnicaDesdeResultado();
   });
 
   document.getElementById('btnClearData').addEventListener('click', () => {
@@ -398,7 +403,8 @@ function showMeasurementResult(r) {
       <div class="stat-chip">Score Global: <strong>${r.globalScore}/4</strong></div>
       <div class="stat-chip">Calidad: <strong style="color:${qosColor(r.globalQuality)}">${STATUS_LABELS[r.globalQuality]}</strong></div>
       <div class="stat-chip">Herramienta: <strong>${r.herramienta}</strong></div>
-      <button class="btn btn-secondary btn-sm" onclick="exportSingleCSV('${r.id}')">📥 Exportar esta medición</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportSingleCSV('${r.id}')">📥 Exportar CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="abrirFichaTecnicaDesdeResultado()">📄 Generar Ficha Técnica</button>
     </div>`;
   card.scrollIntoView({ behavior: 'smooth' });
 }
@@ -408,6 +414,26 @@ window.exportSingleCSV = function(id) {
   const all = loadMeasurements();
   const m   = all.find(x => x.id === id);
   if (m) exportMeasurementsCSV([m], `medicion_${m.fase}_${Date.now()}.csv`);
+};
+
+// Abrir Ficha Técnica desde botón en historial
+window.abrirFichaTecnicaDesdeHistorial = function(id) {
+  const all = loadMeasurements();
+  const m   = all.find(x => x.id === id);
+  if (!m) { showToast('Medición no encontrada.'); return; }
+  const nodes = loadNodes();
+  const nodo  = nodes.find(n => n.id === m.nodeid);
+  abrirFichaTecnica(m, nodo);
+};
+
+// Abrir Ficha Técnica desde resultado de medición
+window.abrirFichaTecnicaDesdeResultado = function() {
+  const all = loadMeasurements();
+  const last = all[all.length - 1];
+  if (!last) { showToast('No hay mediciones para generar ficha.'); return; }
+  const nodes = loadNodes();
+  const nodo  = nodes.find(n => n.id === last.nodeid);
+  abrirFichaTecnica(last, nodo);
 };
 
 // ============================================================
@@ -454,7 +480,7 @@ function refreshHistory() {
       <table>
         <thead><tr>
           <th>#</th><th>Timestamp</th><th>Sesión</th><th>Nodo</th><th>Fase</th>
-          <th>Delay</th><th>Jitter</th><th>DL Mbps</th><th>Loss %</th><th>Score</th><th>Calidad</th>
+          <th>Delay</th><th>Jitter</th><th>DL Mbps</th><th>Loss %</th><th>Score</th><th>Calidad</th><th>Acción</th>
         </tr></thead>
         <tbody>
           ${[...measurements].reverse().map((m, i) => `
@@ -468,6 +494,7 @@ function refreshHistory() {
               <td>${m.downloadMbps}</td><td>${m.packetLoss}</td>
               <td style="font-family:var(--font-mono)">${m.globalScore}</td>
               <td><span class="badge badge-${m.globalQuality}">${STATUS_LABELS[m.globalQuality] || '—'}</span></td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:0.7rem;padding:3px 8px" onclick="abrirFichaTecnicaDesdeHistorial('${m.id}')">📄 Ficha</button></td>
             </tr>`).join('')}
         </tbody>
       </table>`;
