@@ -426,11 +426,19 @@ window.abrirFichaTecnicaDesdeHistorial = function(id) {
   abrirFichaTecnica(m, nodo);
 };
 
-// Abrir Ficha Técnica desde resultado de medición
+// Abrir Ficha Técnica desde resultado de medición o topbar
 window.abrirFichaTecnicaDesdeResultado = function() {
-  const all = loadMeasurements();
+  let all = loadMeasurements();
+  // Si no hay mediciones, cargar demo automáticamente
+  if (!all.length) {
+    const result = seedDemoData((msg) => {});
+    if (result) {
+      all = loadMeasurements();
+      showToast('✅ Datos demo cargados para generar ficha.');
+    }
+  }
   const last = all[all.length - 1];
-  if (!last) { showToast('No hay mediciones para generar ficha.'); return; }
+  if (!last) { alert('No hay mediciones. Ejecuta una medición primero.'); return; }
   const nodes = loadNodes();
   const nodo  = nodes.find(n => n.id === last.nodeid);
   abrirFichaTecnica(last, nodo);
