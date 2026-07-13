@@ -134,6 +134,14 @@ function initTopbarActions() {
     showToast('Backup JSON exportado.');
   });
 
+  document.getElementById('btnExportPrePos').addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.href = 'Pre_Pos_QoS (1).xlsx';
+    link.download = 'Pre_Pos_QoS (1).xlsx';
+    link.click();
+    showToast('Descargando archivo Pre_Pos_QoS (1)...');
+  });
+
   document.getElementById('btnFichaTecnica').addEventListener('click', () => {
     window.abrirFichaTecnicaDesdeResultado();
   });
