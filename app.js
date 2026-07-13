@@ -157,65 +157,96 @@ function initTopbarActions() {
     refreshDashboard(); refreshNodes(); refreshHistory();
   });
 
-  document.getElementById('btnLoadExcel').addEventListener('click', () => {
-    ['qos_gpon_nodes', 'qos_gpon_sessions', 'qos_gpon_measurements'].forEach(k => localStorage.removeItem(k));
-    
-    // Create new measurements and nodes from prePosData
-    const newMeasurements = [];
-    const newNodes = [];
-    const nodeSet = new Set();
+  let isExcelLoaded = false;
+  let backupData = null;
 
-    prePosData.forEach((row, index) => {
-      // Add node if not exists
-      if (!nodeSet.has(row.Sector_Santa_Anita)) {
-        nodeSet.add(row.Sector_Santa_Anita);
-        newNodes.push({
-          id: row.Sector_Santa_Anita,
-          name: row.Sector_Santa_Anita,
-          olt: 'OLT-Central',
-          spliter: '1:64',
-          lat: -12.04, lng: -77.02
-        });
+  document.getElementById('btnLoadExcel').addEventListener('click', (e) => {
+    if (isExcelLoaded) {
+      // Unload Excel and restore backup
+      if (backupData) {
+        localStorage.setItem('qos_gpon_nodes', backupData.nodes);
+        localStorage.setItem('qos_gpon_sessions', backupData.sessions);
+        localStorage.setItem('qos_gpon_measurements', backupData.measurements);
+      } else {
+        ['qos_gpon_nodes', 'qos_gpon_sessions', 'qos_gpon_measurements'].forEach(k => localStorage.removeItem(k));
       }
+      
+      isExcelLoaded = false;
+      e.target.textContent = '📊 Últimos Resultados';
+      e.target.className = 'btn btn-secondary';
+      showToast('Datos del Excel removidos. Mostrando datos anteriores.');
+    } else {
+      // Load Excel
+      backupData = {
+        nodes: localStorage.getItem('qos_gpon_nodes') || '[]',
+        sessions: localStorage.getItem('qos_gpon_sessions') || '[]',
+        measurements: localStorage.getItem('qos_gpon_measurements') || '[]'
+      };
 
-      const baseDate = new Date();
-      baseDate.setMinutes(baseDate.getMinutes() - (prePosData.length - index) * 10);
+      ['qos_gpon_nodes', 'qos_gpon_sessions', 'qos_gpon_measurements'].forEach(k => localStorage.removeItem(k));
       
-      const createQoSObj = (d, j, t, pl) => ({
-        delay: classify('delay', d),
-        jitter: classify('jitter', j),
-        throughput: classify('throughput', t),
-        packetLoss: classify('packetLoss', pl)
+      const newMeasurements = [];
+      const newNodes = [];
+      const nodeSet = new Set();
+
+      prePosData.forEach((row, index) => {
+        if (!nodeSet.has(row.Sector_Santa_Anita)) {
+          nodeSet.add(row.Sector_Santa_Anita);
+          newNodes.push({
+            id: row.Sector_Santa_Anita,
+            name: row.Sector_Santa_Anita,
+            olt: 'OLT-Central',
+            spliter: '1:64',
+            lat: -12.04, lng: -77.02
+          });
+        }
+
+        const baseDate = new Date();
+        baseDate.setMinutes(baseDate.getMinutes() - (prePosData.length - index) * 10);
+        
+        const createQoSObj = (d, j, t, pl) => ({
+          delay: classify('delay', d),
+          jitter: classify('jitter', j),
+          throughput: classify('throughput', t),
+          packetLoss: classify('packetLoss', pl)
+        });
+        
+        newMeasurements.push({
+          id: 'pre_' + row.ID_Muestra,
+          timestamp: baseDate.toISOString(),
+          nodoId: row.Sector_Santa_Anita,
+          fase: 'PRETEST',
+          delay: row.Retardo_Latencia_Pretest_ms,
+          jitter: row.Variacion_Jitter_Pretest_ms,
+          downloadMbps: row.Throughput_Pretest_Mbps,
+          packetLoss: row.Perdida_Paquetes_Pretest_Decimal,
+          qos: createQoSObj(row.Retardo_Latencia_Pretest_ms, row.Variacion_Jitter_Pretest_ms, row.Throughput_Pretest_Mbps, row.Perdida_Paquetes_Pretest_Decimal)
+        });
+        
+        newMeasurements.push({
+          id: 'pos_' + row.ID_Muestra,
+          timestamp: baseDate.toISOString(),
+          nodoId: row.Sector_Santa_Anita,
+          fase: 'POSTEST',
+          delay: row.Retardo_Latencia_Postest_ms,
+          jitter: row.Variacion_Jitter_Postest_ms,
+          downloadMbps: row.Throughput_Postest_Mbps,
+          packetLoss: row.Perdida_Paquetes_Postest_Decimal,
+          qos: createQoSObj(row.Retardo_Latencia_Postest_ms, row.Variacion_Jitter_Postest_ms, row.Throughput_Postest_Mbps, row.Perdida_Paquetes_Postest_Decimal)
+        });
       });
       
-      newMeasurements.push({
-        id: 'pre_' + row.ID_Muestra,
-        timestamp: baseDate.toISOString(),
-        nodoId: row.Sector_Santa_Anita,
-        fase: 'PRETEST',
-        delay: row.Retardo_Latencia_Pretest_ms,
-        jitter: row.Variacion_Jitter_Pretest_ms,
-        downloadMbps: row.Throughput_Pretest_Mbps,
-        packetLoss: row.Perdida_Paquetes_Pretest_Decimal,
-        qos: createQoSObj(row.Retardo_Latencia_Pretest_ms, row.Variacion_Jitter_Pretest_ms, row.Throughput_Pretest_Mbps, row.Perdida_Paquetes_Pretest_Decimal)
-      });
+      localStorage.setItem('qos_gpon_nodes', JSON.stringify(newNodes));
+      localStorage.setItem('qos_gpon_measurements', JSON.stringify(newMeasurements));
       
-      newMeasurements.push({
-        id: 'pos_' + row.ID_Muestra,
-        timestamp: baseDate.toISOString(),
-        nodoId: row.Sector_Santa_Anita,
-        fase: 'POSTEST',
-        delay: row.Retardo_Latencia_Postest_ms,
-        jitter: row.Variacion_Jitter_Postest_ms,
-        downloadMbps: row.Throughput_Postest_Mbps,
-        packetLoss: row.Perdida_Paquetes_Postest_Decimal,
-        qos: createQoSObj(row.Retardo_Latencia_Postest_ms, row.Variacion_Jitter_Postest_ms, row.Throughput_Postest_Mbps, row.Perdida_Paquetes_Postest_Decimal)
-      });
-    });
-    
-    localStorage.setItem('qos_gpon_nodes', JSON.stringify(newNodes));
-    localStorage.setItem('qos_gpon_measurements', JSON.stringify(newMeasurements));
-    showToast(`✅ ${newMeasurements.length} mediciones y ${newNodes.length} nodos importados.`);
+      isExcelLoaded = true;
+      e.target.textContent = '❌ Volver a datos anteriores';
+      e.target.className = 'btn btn-primary';
+      e.target.style.backgroundColor = '#ef4444';
+      e.target.style.borderColor = '#ef4444';
+      showToast(`✅ ${newMeasurements.length} mediciones y ${newNodes.length} nodos importados.`);
+    }
+
     refreshDashboard();
     refreshNodes();
     refreshHistory();
