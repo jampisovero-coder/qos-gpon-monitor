@@ -21,6 +21,7 @@ import { renderSessionSelectors, renderComparisonPanel } from './modules/compari
 import { seedDemoData } from './modules/seeder.js';
 import { renderReliabilityPanel } from './modules/reliability.js';
 import { abrirFichaTecnica } from './modules/fichaTecnica.js';
+import { prePosData } from './data/pre_pos.js';
 
 // ============================================================
 // ESTADO GLOBAL
@@ -211,26 +212,48 @@ function refreshDashboard() {
 // ============================================================
 // LATEST RESULTS
 // ============================================================
+let prePosChartInstance = null;
+
 function initLatest() {
-  const latestMetricSelect = document.getElementById('latestMetricSelect');
-  if (latestMetricSelect) {
-    latestMetricSelect.addEventListener('change', () => refreshLatest());
-  }
+  // No events needed
 }
 
 function refreshLatest() {
-  const allMeasurements = loadMeasurements();
-  const measurements = allMeasurements.filter(m => m.fase === activePhase);
-  const metric = document.getElementById('latestMetricSelect')?.value || 'delay';
-  const recent = measurements.slice(-20);
-  
-  if (recent.length) {
-    renderTimelineChart('latestTimelineChart', recent, metric);
-    renderRadarChart('latestRadarChart', recent);
-  } else {
-    renderTimelineChart('latestTimelineChart', [], metric);
-    renderRadarChart('latestRadarChart', []);
-  }
+  if (!prePosData || prePosData.length === 0) return;
+
+  const avg = {
+    pre_delay: prePosData.reduce((acc, d) => acc + (d.Retardo_Latencia_Pretest_ms || 0), 0) / prePosData.length,
+    pos_delay: prePosData.reduce((acc, d) => acc + (d.Retardo_Latencia_Postest_ms || 0), 0) / prePosData.length,
+    pre_jitter: prePosData.reduce((acc, d) => acc + (d.Variacion_Jitter_Pretest_ms || 0), 0) / prePosData.length,
+    pos_jitter: prePosData.reduce((acc, d) => acc + (d.Variacion_Jitter_Postest_ms || 0), 0) / prePosData.length,
+    pre_loss: prePosData.reduce((acc, d) => acc + (d.Perdida_Paquetes_Pretest_Decimal || 0), 0) / prePosData.length,
+    pos_loss: prePosData.reduce((acc, d) => acc + (d.Perdida_Paquetes_Postest_Decimal || 0), 0) / prePosData.length,
+    pre_tp: prePosData.reduce((acc, d) => acc + (d.Throughput_Pretest_Mbps || 0), 0) / prePosData.length,
+    pos_tp: prePosData.reduce((acc, d) => acc + (d.Throughput_Postest_Mbps || 0), 0) / prePosData.length,
+  };
+
+  const ctx = document.getElementById('prePosBarChart')?.getContext('2d');
+  if (!ctx) return;
+  if (prePosChartInstance) prePosChartInstance.destroy();
+
+  prePosChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Delay (ms)', 'Jitter (ms)', 'Packet Loss (%)', 'Throughput (Mbps)'],
+      datasets: [
+        { label: 'Pretest (Diagnóstico)', data: [avg.pre_delay, avg.pre_jitter, avg.pre_loss, avg.pre_tp], backgroundColor: '#f59e0b' },
+        { label: 'Postest (Proyección GPON)', data: [avg.pos_delay, avg.pos_jitter, avg.pos_loss, avg.pos_tp], backgroundColor: '#10b981' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      }
+    }
+  });
 }
 
 function updateMetricCard(metric, value, qos) {

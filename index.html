@@ -337,26 +337,16 @@
     <section class="page-content hidden" id="page-latest">
       <div class="section-header">
         <div>
-          <h2>Últimos Resultados</h2>
-          <p class="section-subtitle">Visualización gráfica de los últimos resultados registrados</p>
+          <h2>Últimos Resultados (Pre y Pos GPON)</h2>
+          <p class="section-subtitle">Visualización gráfica de los datos consolidados del Excel</p>
         </div>
       </div>
       <div class="dashboard-grid">
-        <div class="chart-card">
+        <div class="chart-card" style="grid-column: 1 / -1">
           <div class="chart-header">
-            <span class="chart-title">Evolución de Latencia (Últimos Resultados)</span>
-            <select id="latestMetricSelect" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:4px 10px;border-radius:6px;font-size:0.8rem">
-              <option value="delay">Delay (ms)</option>
-              <option value="jitter">Jitter (ms)</option>
-              <option value="packetLoss">Packet Loss (%)</option>
-              <option value="throughput">Throughput (Mbps)</option>
-            </select>
+            <span class="chart-title">Comparativa Promedios Pretest vs Postest</span>
           </div>
-          <div class="chart-container"><canvas id="latestTimelineChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header"><span class="chart-title">Perfil QoS (Últimos Resultados)</span></div>
-          <div class="chart-container"><canvas id="latestRadarChart"></canvas></div>
+          <div class="chart-container" style="height: 400px;"><canvas id="prePosBarChart"></canvas></div>
         </div>
       </div>
     </section>
