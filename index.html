@@ -50,6 +50,10 @@
         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Confiabilidad
       </div>
+      <div class="nav-item" data-page="latest" id="nav-latest">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        Últimos Resultados
+      </div>
     </nav>
 
     <div class="sidebar-footer">
@@ -68,7 +72,7 @@
         <button class="btn btn-primary btn-sm" id="btnFichaTecnica">📄 Ficha Técnica</button>
         <button class="btn btn-secondary btn-sm" id="btnSeedData" style="color:#10b981;border-color:#10b98133">📊 Cargar Datos Demo</button>
         <button class="btn btn-secondary btn-sm" id="btnExportJSON">📦 Backup JSON</button>
-        <button class="btn btn-secondary btn-sm" id="btnExportPrePos">📥 Exportar Pre_Pos_QoS (1)</button>
+        <button class="btn btn-secondary btn-sm" id="btnExportPrePos">📥 Exportar Resultados</button>
         <button class="btn btn-secondary btn-sm" id="btnClearData" style="color:#ef4444;border-color:#ef444433">🗑 Limpiar</button>
       </div>
     </header>
@@ -325,6 +329,36 @@
          ========================================== -->
     <section class="page-content hidden" id="page-reliability">
       <div id="reliabilityPanel"></div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA: ÚLTIMOS RESULTADOS
+         ========================================== -->
+    <section class="page-content hidden" id="page-latest">
+      <div class="section-header">
+        <div>
+          <h2>Últimos Resultados</h2>
+          <p class="section-subtitle">Visualización gráfica de los últimos resultados registrados</p>
+        </div>
+      </div>
+      <div class="dashboard-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Evolución de Latencia (Últimos Resultados)</span>
+            <select id="latestMetricSelect" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:4px 10px;border-radius:6px;font-size:0.8rem">
+              <option value="delay">Delay (ms)</option>
+              <option value="jitter">Jitter (ms)</option>
+              <option value="packetLoss">Packet Loss (%)</option>
+              <option value="throughput">Throughput (Mbps)</option>
+            </select>
+          </div>
+          <div class="chart-container"><canvas id="latestTimelineChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Perfil QoS (Últimos Resultados)</span></div>
+          <div class="chart-container"><canvas id="latestRadarChart"></canvas></div>
+        </div>
+      </div>
     </section>
 
   </div><!-- /main-content -->

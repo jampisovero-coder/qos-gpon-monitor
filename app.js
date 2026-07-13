@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMeasure();
   initHistory();
   initComparison();
+  initLatest();
   updatePhaseBadge();
 });
 
@@ -75,6 +76,7 @@ function navigateTo(page) {
     history:     'Historial de Mediciones',
     comparison:  'Análisis Comparativo',
     reliability: 'Confiabilidad del Instrumento',
+    latest:      'Últimos Resultados',
   };
   document.getElementById('topbarTitle').textContent = titles[page] || page;
   currentPage = page;
@@ -86,6 +88,7 @@ function navigateTo(page) {
   if (page === 'history')      refreshHistory();
   if (page === 'comparison')   refreshComparison();
   if (page === 'reliability')  renderReliabilityPanel('reliabilityPanel');
+  if (page === 'latest')       refreshLatest();
 }
 
 // ============================================================
@@ -203,6 +206,31 @@ function refreshDashboard() {
   }
 
   renderRecentTable('dashRecentTable', measurements.slice(-8).reverse());
+}
+
+// ============================================================
+// LATEST RESULTS
+// ============================================================
+function initLatest() {
+  const latestMetricSelect = document.getElementById('latestMetricSelect');
+  if (latestMetricSelect) {
+    latestMetricSelect.addEventListener('change', () => refreshLatest());
+  }
+}
+
+function refreshLatest() {
+  const allMeasurements = loadMeasurements();
+  const measurements = allMeasurements.filter(m => m.fase === activePhase);
+  const metric = document.getElementById('latestMetricSelect')?.value || 'delay';
+  const recent = measurements.slice(-20);
+  
+  if (recent.length) {
+    renderTimelineChart('latestTimelineChart', recent, metric);
+    renderRadarChart('latestRadarChart', recent);
+  } else {
+    renderTimelineChart('latestTimelineChart', [], metric);
+    renderRadarChart('latestRadarChart', []);
+  }
 }
 
 function updateMetricCard(metric, value, qos) {
